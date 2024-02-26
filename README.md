@@ -17,7 +17,7 @@ This web application allows users to track their powerlifting workouts and adjus
 1. Clone the repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/walter-clayton/powerlifting-training-load.git
 
    ```
 
