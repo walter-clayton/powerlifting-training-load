@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Powerlifting Load Adjustment</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <h2>Powerlifting Load Adjustment</h2>
+    
+    <form @submit.prevent="addWorkout">
+      <label for="prescribedLoad">Prescribed Load (kg):</label>
+      <input type="number" id="prescribedLoad" v-model.number="prescribedLoad" required>
+      
+      <label for="intendedRPE">Intended RPE (Rate of Perceived Exertion):</label>
+      <select id="intendedRPE" v-model.number="intendedRPE" required>
+        <option value="" disabled>Select RPE</option>
+        <option v-for="rpeScore in rpeScores" :value="rpeScore">{{ rpeScore }}</option>
+      </select>
+
+      <label for="actualRPE">Actual RPE (Rate of Perceived Exertion):</label>
+      <select id="actualRPE" v-model.number="actualRPE" required>
+        <option value="" disabled>Select RPE</option>
+        <option v-for="rpeScore in rpeScores" :value="rpeScore">{{ rpeScore }}</option>
+      </select>
+      
+      <button type="submit">Add Workout</button>
+    </form>
+    <div class="main">
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="rpeChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="loadChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="adjustedLoadChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        prescribedLoad: null,
+        intendedRPE: null,
+        actualRPE: null,
+        workouts: [],
+        rpeScores: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], // RPE score options
+      },
+      mounted() {
+        this.createCharts();
+      },
+      methods: {
+        addWorkout() {
+          this.workouts.push({ prescribedLoad: this.prescribedLoad, intendedRPE: this.intendedRPE, actualRPE: this.actualRPE });
+          this.updateCharts();
+          this.prescribedLoad = null;
+          this.intendedRPE = null;
+          this.actualRPE = null;
+        },
+        createCharts() {
+          this.rpeChart = new Chart('rpeChart', {
+            type: 'line',
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: 'Intended RPE Scores',
+                  data: [],
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  borderWidth: 1,
+                },
+                {
+                  label: 'Actual RPE Scores',
+                  data: [],
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                yAxes: [
+                  {
+                    ticks: {
+                      beginAtZero: true,
+                      stepSize: 1,
+                      max: 10,
+                    },
+                  },
+                ],
+              },
+            },
+          });
+
+          this.loadChart = new Chart('loadChart', {
+            type: 'line',
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: 'Training Load (kg)',
+                  data: [],
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgba(54, 162, 235, 1)',
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                yAxes: [
+                  {
+                    ticks: {
+                      beginAtZero: true,
+                    },
+                  },
+                ],
+              },
+            },
+          });
+
+          this.adjustedLoadChart = new Chart('adjustedLoadChart', {
+            type: 'line',
+            data: {
+              labels: [],
+              datasets: [
+                {
+                  label: 'Adjusted Training Load (kg)',
+                  data: [],
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  borderColor: 'rgba(255, 99, 132, 1)',
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                yAxes: [
+                  {
+                    ticks: {
+                      beginAtZero: true,
+                    },
+                  },
+                ],
+              },
+            },
+          });
+        },
+        updateCharts() {
+          const labels = this.workouts.map((_, index) => `Workout ${index + 1}`);
+          const intendedRPE = this.workouts.map((workout) => workout.intendedRPE);
+          const actualRPE = this.workouts.map((workout) => workout.actualRPE);
+          const load = this.workouts.map((workout) => workout.prescribedLoad);
+          // Calculate the adjusted load using the RPE discrepancy factor
+          const adjustedLoad = this.workouts.map((workout) => {
+            const adjustmentFactor = 1 + (workout.intendedRPE - workout.actualRPE) * 0.05;
+            return workout.prescribedLoad * adjustmentFactor;
+          });
+          this.rpeChart.data.labels = labels;
+          this.rpeChart.data.datasets[0].data = intendedRPE;
+          this.rpeChart.data.datasets[1].data = actualRPE;
+          this.rpeChart.update();
+
+          this.loadChart.data.labels = labels;
+          this.loadChart.data.datasets[0].data = load;
+          this.loadChart.update();
+
+          this.adjustedLoadChart.data.labels = labels;
+          this.adjustedLoadChart.data.datasets[0].data = adjustedLoad;
+          this.adjustedLoadChart.update();
+        },
+      },
+    });
+  </script>
+</body>
+</html>
